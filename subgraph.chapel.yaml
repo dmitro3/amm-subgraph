@@ -1,0 +1,122 @@
+specVersion: 0.0.2
+description: Balancer is a non-custodial portfolio manager, liquidity provider, and price sensor.
+repository: https://github.com/balancer-labs/balancer-subgraph
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Factory
+    network: chapel
+    source:
+      address: "0x6dB026A85c9D1c46ED1D16A09Eb879204c2c3aaF"
+      abi: Factory
+      startBlock: 14956311
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/mappings/factory.ts
+      entities:
+        - Balancer
+      abis:
+        - name: Factory
+          file: ./abis/BFactory.json
+        - name: CRPFactory
+          file: ./abis/CRPFactory.json
+        - name: ConfigurableRightsPool
+          file: ./abis/ConfigurableRightsPool.json
+        - name: BPoolExtension
+          file: ./abis/BPoolExtension.json
+      eventHandlers:
+        - event: LOG_NEW_POOL(indexed address,indexed address)
+          handler: handleNewPool
+templates:
+  - kind: ethereum/contract
+    name: Pool
+    network: chapel
+    source:
+      abi: Pool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/mappings/pool.ts
+      entities:
+        - Pool
+        - Balancer
+        - Swap
+      abis:
+        - name: Pool
+          file: ./abis/BPool.json
+        - name: BToken
+          file: ./abis/BToken.json
+        - name: BTokenBytes
+          file: ./abis/BTokenBytes32.json
+        - name: BPoolExtension
+          file: ./abis/BPoolExtension.json
+      eventHandlers:
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x34e1990700000000000000000000000000000000000000000000000000000000"
+          handler: handleSetSwapFee
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x787dce3d00000000000000000000000000000000000000000000000000000000"
+          handler: handleSetProtocolFee
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x92eefe9b00000000000000000000000000000000000000000000000000000000"
+          handler: handleSetController
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x49b5955200000000000000000000000000000000000000000000000000000000"
+          handler: handleSetPublicSwap
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x4bb278f300000000000000000000000000000000000000000000000000000000"
+          handler: handleFinalize
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x3fdddaa200000000000000000000000000000000000000000000000000000000"
+          handler: handleRebind
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0xe4e1e53800000000000000000000000000000000000000000000000000000000"
+          handler: handleRebind
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0xcf5e7bd300000000000000000000000000000000000000000000000000000000"
+          handler: handleUnbind
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x691a91c200000000000000000000000000000000000000000000000000000000"
+          handler: handleSetRoles
+        - event: LOG_CALL(indexed bytes4,indexed address,bytes)
+          topic0: "0x8c28cbe800000000000000000000000000000000000000000000000000000000"
+          handler: handleGulp
+        - event: LOG_JOIN(indexed address,indexed address,uint256)
+          handler: handleJoinPool
+        - event: LOG_EXIT(indexed address,indexed address,uint256)
+          handler: handleExitPool
+        - event: LOG_SWAP(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleSwap
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      # callHandlers:
+      #   - function: gulp(address)
+      #     handler: handleGulp
+  - kind: ethereum/contract
+    name: CrpController
+    network: chapel
+    source:
+      abi: ConfigurableRightsPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/mappings/pool.ts
+      entities:
+        - Pool
+      abis:
+        - name: ConfigurableRightsPool
+          file: ./abis/ConfigurableRightsPool.json
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleSetCrpController
+        - event: LogJoin(indexed address,indexed address,uint256)
+          handler: handleJoinCrpPool
+        - event: LogExit(indexed address,indexed address,uint256)
+          handler: handleExitCrpPool
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleCrpTransfer
